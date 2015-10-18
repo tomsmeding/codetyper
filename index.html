@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Codetyper</title>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+var nickname=null;
+var compother,comptext,textcursor;
+
+console.log(new Date().getTime());
+var socket=io();
+console.log(new Date().getTime());
+
+socket.on("connect",function(){
+	console.log(new Date().getTime()+" -- connection");
+});
+socket.on("-getnick",function(nick){
+	document.getElementById("nick").innerHTML=nickname=nick;
+});
+socket.on("-setnick",function(res){
+	if(!res[0])alert(res[1]);
+	else document.getElementById("nick").innerHTML=nickname=res[1];
+});
+socket.on("-usersearch",function(res){
+	var list=document.getElementById("searchlist");
+	var tr,td;
+	var l,i;
+	l=list.children;
+	for(i=l.length-1;i>=0;i--)list.removeChild(l[i]);
+	for(i=0;i<res.length;i++){
+		tr=document.createElement("tr");
+		td=document.createElement("td");
+		td.innerHTML=res[i];
+		tr.appendChild(td);
+		tr.addEventListener("click",(function(nn){return function(ev){
+			socket.emit("invite",nn);
+		};})(res[i]));
+		list.appendChild(tr);
+	}
+});
+socket.on("invitation",function(from){
+	var response=confirm("Invitation to a competition received from "+from+"; accept?");
+	if(!response)return;
+	socket.emit("invite-accept",from);
+});
+socket.on("competition-start",function(obj){
+	compother=obj.other;
+	comptext=obj.text;
+	displayoverlay(true);
+	document.getElementById("comptext2").innerHTML=comptext;
+	textcursor=0;
+});
+socket.on("otherprogress",function(pr){
+	document.getElementById("progress2bar").style.width=pr*100+"%";
+	document.getElementById("progress2perc").innerHTML=~~(pr*100)+"%";
+});
+socket.on("alert",function(text){
+	alert(text);
+});
+socket.on("message",function(msg){
+	var e=document.getElementById("message");
+	if(!e.firstChild)e.appendChild(document.createTextNode(msg));
+	else e.firstChild.nodeValue=msg;
+});
+socket.on("exit-competition",function(){
+	alert("Opponent quitted competition.");
+	displayoverlay(false);
+});
+
+function compinputkeyup(ev){
+	var input=ev.target.value;
+	var e1=document.getElementById("comptext1"),e2=document.getElementById("comptext2");
+	if(input.length==0){
+		e1.innerHTML="";
+		e2.innerHTML=comptext;
+		return;
+	}
+	var i,len=Math.min(input.length,comptext.length);
+	for(i=0;i<len;i++)if(input[i]!=comptext[i])break;
+	textcursor=i;
+	if(textcursor<input.length){
+		ev.target.classList.add("incorrect");
+	} else {
+		ev.target.classList.remove("incorrect");
+	}
+	socket.emit("progress",textcursor/comptext.length);
+	document.getElementById("comptext1").innerHTML=comptext.slice(0,textcursor);
+	document.getElementById("comptext2").innerHTML=comptext.slice(textcursor);
+	document.getElementById("progress1bar").style.width=textcursor/comptext.length*100+"%";
+	document.getElementById("progress1perc").innerHTML=~~(textcursor/comptext.length*100)+"%";
+	if(textcursor==comptext.length){
+		ev.target.disabled=true;
+		document.body.focus();
+	}
+}
+
+function changenick(){
+	var newnick;
+	newnick=prompt("New nick:");
+	if(!newnick)return;
+	while(!/^[a-zA-Z0-9_.-]{3,}$/.test(newnick)){
+		newnick=prompt("Invalid nick. New nick:");
+		if(!newnick)return;
+	}
+	socket.emit("setnick",newnick);
+}
+
+function searchnick(){
+	var query=document.getElementById("searchnick").value;
+	var list=document.getElementById("searchlist");
+	var l,i;
+	if(query.length<2){
+		l=list.children;
+		for(i=0;i<l.length;i++)list.removeChild(l[i]);
+		return;
+	}
+	socket.emit("usersearch",query);
+}
+
+function displayoverlay(yes){
+	var overlay=document.getElementById("compoverlay");
+	if(yes){
+		overlay.style.display="block";
+		setTimeout(function(){overlay.style.opacity="1";},1);
+	} else {
+		overlay.style.opacity="0";
+		setTimeout(function(){overlay.style.display="none";},500);
+	}
+}
+
+window.addEventListener("load",function(){
+	socket.emit("getnick");
+	var compoverlay=document.getElementById("compoverlay");
+	compoverlay.addEventListener("click",function(ev){
+		if(compoverlay.contains(ev))return;
+		if(confirm("Exit competition?")){
+			socket.emit("exit-competition");
+			displayoverlay(false);
+		}
+	});
+});
+</script>
+<style>
+body{
+	font-family:"San Francisco","Helvetica Neue",Arial,sans-serif;
+}
+#nick{
+	padding:2px;
+	background-color:#eee;
+	border-radius:3px;
+}
+#searchlistcontainer{
+	width:150px;
+	height:100px;
+	overflow-y:scroll;
+	border:1px #ccc solid;
+	margin-left:2px;
+}
+#searchlistcontainer > table{
+	border-spacing:0px;
+	border-collapse:collapse;
+	width:100%;
+}
+#searchlist > tr{
+	cursor:pointer;
+	width:100%;
+}
+#searchlist > tr:hover{
+	background-color:#eef;
+}
+
+#compoverlay{
+	position:absolute;
+	width:100%;
+	height:100%;
+	left:0;
+	top:0;
+	background-color:rgba(0,0,0,0.4);
+	opacity:0;
+	display:none;
+	/*transition:opacity 0.5s;*/
+}
+#compcont{
+	display:inline-block;
+	background-color:white;
+	border-radius:10px;
+	border:1px black solid;
+	width:800px;
+	height:530px;
+}
+#comptext,#compinput{
+	font-family:Monaco,"DejaVu Sans Mono","Consolas","Inconsolata","Courier New",Monospace;
+}
+#comptext{
+	height:calc(100% - 160px);
+	padding:15px;
+	text-align:left;
+	-webkit-user-select:none;
+	-moz-user-select:none;
+	-ms-user-select:none;
+	user-select:none;
+}
+#comptext1{
+	color:#bbb;
+}
+#compinputdiv{
+	margin-left:5px;
+	width:calc(100% - 16px);
+}
+#compinput{
+	width:100%;
+	height:20px;
+	font-size:17px;
+}
+
+.progress{
+	height:25px;
+	position:relative;
+}
+.progress > div.overtext{
+	position:absolute;
+	left:0;
+	top:3px;
+	height:25px;
+}
+.progress > div.bar{
+	height:25px;
+	width:0px; /*initially*/
+}
+#progress1 > div.bar{
+	background-color:green;
+}
+#progress2 > div.bar{
+	background-color:red;
+}
+
+#message{
+	margin-top:10px;
+}
+
+input[type=text].incorrect{
+	background-color:#f33;
+}
+</style>
+</head>
+<body>
+<div id="compoverlay">
+	<table style="width:100%;height:100%"><tbody style="height:100%"><tr style="height:100%"><td style="text-align:center;vertical-align:middle">
+		<div id="compcont">
+			<div id="progress1" class="progress" style="margin-top:10px">
+				<div id="progress1bar" class="bar"></div>
+				<div class="overtext">My progress</div>
+				<div id="progress1perc" class="overtext" style="width:100%;text-align:right">0%</div>
+			</div>
+			<div id="progress2" class="progress">
+				<div id="progress2bar" class="bar"></div>
+				<div class="overtext">Opponent's progress</div>
+				<div id="progress2perc" class="overtext" style="width:100%;text-align:right">0%</div>
+			</div>
+			<div id="comptext"><span id="comptext1"></span><span id="comptext2"></span></div>
+			<div id="compinputdiv">
+				<input type="text" id="compinput" onkeyup="compinputkeyup(event)">
+			</div>
+			<div id="message"></div>
+		</div>
+	</td></tr></tbody></table>
+</div>
+<div>
+	Nickname: <span id="nick"></span>
+	<input type="button" onclick="changenick()" value="Change">
+</div>
+<h2>Start competition</h2>
+<div>
+	Search for an online user to invite to a competition:<br>
+	<input type="text" id="searchnick" placeholder="Search for nickname..." size="30" onkeyup="searchnick()"><br>
+	<div id="searchlistcontainer">
+		<table><tbody id="searchlist"></tbody></table>
+	</div>
+</div>
+</body>
+</html>

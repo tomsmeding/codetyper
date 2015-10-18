@@ -1,0 +1,30 @@
+{
+  "name": "codetyper",
+  "version": "1.0.0",
+  "description": "Typeracer, for code",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tomsmeding/codetyper.git"
+  },
+  "keywords": [
+    "typeracer",
+    "typing",
+    "speed",
+    "code",
+    "programming"
+  ],
+  "author": "Tom Smeding <hallo@tomsmeding.nl> (http://tomsmeding.com)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tomsmeding/codetyper/issues"
+  },
+  "homepage": "https://github.com/tomsmeding/codetyper#readme",
+  "dependencies": {
+    "express": "^4.13.3",
+    "socket.io": "^1.3.6"
+  }
+}
