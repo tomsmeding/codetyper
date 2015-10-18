@@ -40,6 +40,11 @@ io.on("connection",function(conn){
 	nicklist.push(obj.name);
 	conn.on("disconnect",function(){
 		console.log("disconnected, id = "+obj.id);
+		if(obj.compwith){
+			conntab[obj.compwith].conn.emit("exit-competition");
+			conntab[obj.compwith].compwith=null;
+			conntab[obj.compwith].progress=0.0;
+		}
 		nicklist.splice(nicklist.indexOf(obj.name),1);
 		delete conntab[obj.name];
 	});

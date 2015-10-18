@@ -47,9 +47,7 @@ socket.on("invitation",function(from){
 socket.on("competition-start",function(obj){
 	compother=obj.other;
 	comptext=obj.text;
-	displayoverlay(true);
-	document.getElementById("comptext2").innerHTML=comptext;
-	textcursor=0;
+	startcompetition();
 });
 socket.on("otherprogress",function(pr){
 	document.getElementById("progress2bar").style.width=pr*100+"%";
@@ -127,6 +125,21 @@ function displayoverlay(yes){
 		overlay.style.opacity="0";
 		setTimeout(function(){overlay.style.display="none";},500);
 	}
+}
+
+function startcompetition(){
+	displayoverlay(true);
+	document.getElementById("comptext1").innerHTML="";
+	document.getElementById("comptext2").innerHTML=comptext;
+	document.getElementById("progress1bar").style.width="0px";
+	document.getElementById("progress1perc").innerHTML="0%";
+	document.getElementById("progress2bar").style.width="0px";
+	document.getElementById("progress2perc").innerHTML="0%";
+	document.getElementById("message").innerHTML="";
+	var compinput=document.getElementById("compinput");
+	compinput.value="";
+	compinput.focus();
+	textcursor=0;
 }
 
 window.addEventListener("load",function(){
