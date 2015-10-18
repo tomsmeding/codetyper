@@ -9,6 +9,9 @@ var HTTPPORT=3456;
 
 var COUNTDOWNTIME=3000;
 
+//var SOURCEFILE=process.argv[1];
+var SOURCEFILE="mariolang.cpp";
+
 
 var conntab={},nicklist=[];
 
@@ -24,9 +27,12 @@ function validatenick(nick){
 
 
 function getTypeText(){
-	var lines=String(fs.readFileSync(process.argv[1])).replace(/\n+/g,"\n").split("\n");
-	var start=~~(Math.random()*(lines.length-5));
-	return lines.slice(start,start+5).join(" ").replace(/[ \t]+/g," ").trim();
+	var lines=String(fs.readFileSync(SOURCEFILE)).replace(/\n+/g,"\n").split("\n");
+	var start=~~(Math.random()*(lines.length-10));
+	var res="";
+	var i;
+	for(i=0;i<10&&res.length<120;i++)res+=lines[start+i]+" ";
+	return res.replace(/[ \t]+/g," ").trim();
 }
 
 
