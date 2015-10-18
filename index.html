@@ -133,7 +133,7 @@ window.addEventListener("load",function(){
 	socket.emit("getnick");
 	var compoverlay=document.getElementById("compoverlay");
 	compoverlay.addEventListener("click",function(ev){
-		if(compoverlay.contains(ev))return;
+		if(document.getElementById("compcont").contains(ev.target))return;
 		if(confirm("Exit competition?")){
 			socket.emit("exit-competition");
 			displayoverlay(false);
