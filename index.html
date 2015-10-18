@@ -112,6 +112,7 @@ function compinputkeyup(ev){
 	document.getElementById("progress1bar").style.width=textcursor/comptext.length*100+"%";
 	document.getElementById("progress1perc").innerHTML=~~(textcursor/comptext.length*100)+"%";
 	if(textcursor==comptext.length){
+		ev.target.blur();
 		ev.target.disabled=true;
 		incompetition=false;
 	}

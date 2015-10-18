@@ -35,7 +35,7 @@ app.get("/",function(req,res){
 });
 
 io.on("connection",function(conn){
-	var obj={id:uniqid(),conn:conn,compwith:null,progress:0.0,compready:false};
+	var obj={id:uniqid(),conn:conn,compwith:null,progress:0.0,compready:false,win:null};
 	obj.name="__user"+obj.id;
 	console.log("new connection, id = "+obj.id);
 	conntab[obj.name]=obj;
@@ -91,10 +91,13 @@ io.on("connection",function(conn){
 		conntab[other].compwith=obj.name;
 		obj.compwith=other;
 		conntab[other].progress=obj.progress=0.0;
+		conntab[other].compready=obj.compready=false;
+		conntab[other].win=obj.win=null;
 	});
 	conn.on("competition-ready",function(){
 		if(!obj.compwith)return; //wat
 		if(conntab[obj.compwith].compready){
+			conntab[obj.compwith].compready=obj.compready=false;
 			conn.emit("competition-countdown",COUNTDOWNTIME);
 			conntab[obj.compwith].conn.emit("competition-countdown",COUNTDOWNTIME);
 			setTimeout(function(){
@@ -107,19 +110,26 @@ io.on("connection",function(conn){
 	conn.on("progress",function(pr){
 		if(!obj.compwith)return;
 		conntab[obj.compwith].conn.emit("otherprogress",pr);
+		if(obj.win!=null)return;
 		if(pr>=1.0){
 			conntab[obj.compwith].conn.emit("message","The opponent won!");
 			conn.emit("message","You won!");
+			conntab[obj.compwith].conn.emit("win",false);
+			conn.emit("win",true);
+			conntab[obj.compwith].win=false;
+			obj.win=true;
 		}
 	});
 	conn.on("exit-competition",function(){
 		obj.progress=0.0;
 		obj.compready=false;
+		obj.win=null;
 		if(!obj.compwith)return;
 		var cw=obj.compwith;
 		conntab[cw].conn.emit("exit-competition");
 		conntab[cw].progress=0.0;
 		conntab[cw].compready=false;
+		conntab[cw].win=null;
 		conntab[cw].compwith=null;
 		obj.compwith=null;
 	});
