@@ -7,6 +7,9 @@
 <script>
 var nickname=null;
 var compother,comptext,textcursor;
+var incompetition=false;
+
+var countdowninterval=null;
 
 console.log(new Date().getTime());
 var socket=io();
@@ -40,13 +43,27 @@ socket.on("-usersearch",function(res){
 	}
 });
 socket.on("invitation",function(from){
+	if(incompetition)return;
 	var response=confirm("Invitation to a competition received from "+from+"; accept?");
 	if(!response)return;
 	socket.emit("invite-accept",from);
 });
-socket.on("competition-start",function(obj){
+socket.on("competition-prepare",function(obj){
 	compother=obj.other;
 	comptext=obj.text;
+	preparecompetition();
+});
+socket.on("competition-countdown",function(ms){
+	ms=Math.max(0,~~ms);
+	var splash=document.getElementById("splash");
+	splash.innerHTML=~~(ms/1000);
+	if(countdowninterval)clearInterval(countdowninterval);
+	countdowninterval=setInterval(function(){
+		ms-=1000;
+		splash.innerHTML=~~(ms/1000);
+	},1000);
+});
+socket.on("competition-start",function(){
 	startcompetition();
 });
 socket.on("otherprogress",function(pr){
@@ -54,7 +71,14 @@ socket.on("otherprogress",function(pr){
 	document.getElementById("progress2perc").innerHTML=~~(pr*100)+"%";
 });
 socket.on("alert",function(text){
-	alert(text);
+	if(!incompetition)alert(text);
+	else {
+		var interval=setInterval(function(){
+			if(incompetition)return;
+			clearInterval(interval);
+			alert(text);
+		},1000);
+	}
 });
 socket.on("message",function(msg){
 	var e=document.getElementById("message");
@@ -89,7 +113,7 @@ function compinputkeyup(ev){
 	document.getElementById("progress1perc").innerHTML=~~(textcursor/comptext.length*100)+"%";
 	if(textcursor==comptext.length){
 		ev.target.disabled=true;
-		document.body.focus();
+		incompetition=false;
 	}
 }
 
@@ -110,7 +134,7 @@ function searchnick(){
 	var l,i;
 	if(query.length<2){
 		l=list.children;
-		for(i=0;i<l.length;i++)list.removeChild(l[i]);
+		for(i=l.length-1;i>=0;i--)list.removeChild(l[i]);
 		return;
 	}
 	socket.emit("usersearch",query);
@@ -118,6 +142,7 @@ function searchnick(){
 
 function displayoverlay(yes){
 	var overlay=document.getElementById("compoverlay");
+	if(!yes)incompetition=false;
 	if(yes){
 		overlay.style.display="block";
 		setTimeout(function(){overlay.style.opacity="1";},1);
@@ -127,7 +152,7 @@ function displayoverlay(yes){
 	}
 }
 
-function startcompetition(){
+function preparecompetition(){
 	displayoverlay(true);
 	document.getElementById("comptext1").innerHTML="";
 	document.getElementById("comptext2").innerHTML=comptext;
@@ -137,9 +162,26 @@ function startcompetition(){
 	document.getElementById("progress2perc").innerHTML="0%";
 	document.getElementById("message").innerHTML="";
 	var compinput=document.getElementById("compinput");
+	compinput.disabled=true; //until synchronised start
 	compinput.value="";
-	compinput.focus();
 	textcursor=0;
+	incompetition=true;
+	setTimeout(function(){
+		socket.emit("competition-ready");
+	},200);
+}
+
+function startcompetition(){
+	var compinput=document.getElementById("compinput");
+	compinput.disabled=false;
+	compinput.focus();
+	if(countdowninterval)clearInterval(countdowninterval);
+	countdowninterval=null;
+	var splash=document.getElementById("splash");
+	splash.innerHTML="GO!";
+	setTimeout(function(){
+		splash.innerHTML="";
+	},500);
 }
 
 window.addEventListener("load",function(){
@@ -195,6 +237,7 @@ body{
 	/*transition:opacity 0.5s;*/
 }
 #compcont{
+	position:relative;
 	display:inline-block;
 	background-color:white;
 	border-radius:10px;
@@ -242,14 +285,28 @@ body{
 	width:0px; /*initially*/
 }
 #progress1 > div.bar{
-	background-color:green;
+	background-color:#afa;
 }
 #progress2 > div.bar{
-	background-color:red;
+	background-color:#faa;
 }
 
 #message{
 	margin-top:10px;
+}
+
+#splash{
+	position:absolute;
+	left:50%;
+	top:50%;
+	display:inline-block;
+	width:500px;
+	height:120px;
+	margin-left:-250px;
+	margin-top:-60px;
+	font-size:90px;
+	color:red;
+	font-weight:bold;
 }
 
 input[type=text].incorrect{
@@ -261,6 +318,7 @@ input[type=text].incorrect{
 <div id="compoverlay">
 	<table style="width:100%;height:100%"><tbody style="height:100%"><tr style="height:100%"><td style="text-align:center;vertical-align:middle">
 		<div id="compcont">
+			<div id="splash"></div>
 			<div id="progress1" class="progress" style="margin-top:10px">
 				<div id="progress1bar" class="bar"></div>
 				<div class="overtext">My progress</div>

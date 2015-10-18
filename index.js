@@ -7,6 +7,8 @@ var app=require("express")(),
 
 var HTTPPORT=3456;
 
+var COUNTDOWNTIME=3000;
+
 
 var conntab={},nicklist=[];
 
@@ -33,7 +35,7 @@ app.get("/",function(req,res){
 });
 
 io.on("connection",function(conn){
-	var obj={id:uniqid(),conn:conn,compwith:null,progress:0.0};
+	var obj={id:uniqid(),conn:conn,compwith:null,progress:0.0,compready:false};
 	obj.name="__user"+obj.id;
 	console.log("new connection, id = "+obj.id);
 	conntab[obj.name]=obj;
@@ -41,9 +43,11 @@ io.on("connection",function(conn){
 	conn.on("disconnect",function(){
 		console.log("disconnected, id = "+obj.id);
 		if(obj.compwith){
-			conntab[obj.compwith].conn.emit("exit-competition");
-			conntab[obj.compwith].compwith=null;
-			conntab[obj.compwith].progress=0.0;
+			var cw=obj.compwith;
+			conntab[cw].conn.emit("exit-competition");
+			conntab[cw].progress=0.0;
+			conntab[cw].compready=false;
+			conntab[cw].compwith=null;
 		}
 		nicklist.splice(nicklist.indexOf(obj.name),1);
 		delete conntab[obj.name];
@@ -82,11 +86,23 @@ io.on("connection",function(conn){
 			return;
 		}
 		var text=getTypeText();
-		conntab[other].conn.emit("competition-start",{other:obj.name,text:text});
-		conn.emit("competition-start",{other:other,text:text});
+		conntab[other].conn.emit("competition-prepare",{other:obj.name,text:text});
+		conn.emit("competition-prepare",{other:other,text:text});
 		conntab[other].compwith=obj.name;
 		obj.compwith=other;
 		conntab[other].progress=obj.progress=0.0;
+	});
+	conn.on("competition-ready",function(){
+		if(!obj.compwith)return; //wat
+		if(conntab[obj.compwith].compready){
+			conn.emit("competition-countdown",COUNTDOWNTIME);
+			conntab[obj.compwith].conn.emit("competition-countdown",COUNTDOWNTIME);
+			setTimeout(function(){
+				if(!obj.compwith)return; //k
+				conn.emit("competition-start");
+				conntab[obj.compwith].conn.emit("competition-start");
+			},COUNTDOWNTIME);
+		} else obj.compready=true;
 	});
 	conn.on("progress",function(pr){
 		if(!obj.compwith)return;
@@ -98,10 +114,13 @@ io.on("connection",function(conn){
 	});
 	conn.on("exit-competition",function(){
 		obj.progress=0.0;
+		obj.compready=false;
 		if(!obj.compwith)return;
-		conntab[obj.compwith].conn.emit("exit-competition");
-		conntab[obj.compwith].progress=0.0;
-		conntab[obj.compwith].compwith=null;
+		var cw=obj.compwith;
+		conntab[cw].conn.emit("exit-competition");
+		conntab[cw].progress=0.0;
+		conntab[cw].compready=false;
+		conntab[cw].compwith=null;
 		obj.compwith=null;
 	});
 });
