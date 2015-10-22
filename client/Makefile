@@ -1,6 +1,9 @@
 STYLFILES := $(wildcard styl/*.styl)
 JSFILES := $(wildcard js/*.js)
 
+STYLUS := node_modules/stylus/bin/stylus
+BROWSERIFY := node_modules/browserify/bin/cmd.js
+
 .PHONY: all depend clean
 
 all: main.css bundle.js
@@ -13,9 +16,9 @@ depend:
 
 main.css: $(STYLFILES)
 	mkdir -p css/
-	stylus -o css/ styl/
+	$(STYLUS) -o css/ styl/
 	cat css/* >main.css
 	rm -r css/
 
 bundle.js: $(JSFILES)
-	browserify -t babelify js/index.js -o bundle.js
+	$(BROWSERIFY) -t babelify js/index.js -o bundle.js
