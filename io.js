@@ -4,7 +4,9 @@ var utils = require('./utils.js');
 module.exports = function (http) {
 
 
-var io = require('socket.io')(http)
+var conntab = {}, nicklist = [];
+
+var io = require('socket.io')(http);
 
 function updateclientlists(action,name){
 	var i;

@@ -10,9 +10,6 @@ var COUNTDOWNTIME = 3000;
 //var SOURCEFILE = process.argv[1];
 var SOURCEFILE = "mariolang.cpp";
 
-var conntab = {},
-	nicklist = [];
-
 function getTypeText () {
 	var lines = String(fs.readFileSync(SOURCEFILE)).replace(/\n+/g,"\n").split("\n");
 	var start = ~~(Math.random()*(lines.length-10));
