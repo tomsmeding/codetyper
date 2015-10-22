@@ -29,17 +29,17 @@ io.on("connection",function(conn){
 	});
 	conn.on("setnick",function(nick){
 		if(!utils.validatenick(nick)){
-			conn.emit("-setnick",[false,"Invalid nick"]);
+			conn.emit("-setnick",false,"Invalid nick");
 			return;
 		} else if(conntab[nick]){
-			conn.emit("-setnick",[false,"Nick taken"]);
+			conn.emit("-setnick",false,"Nick taken");
 			return;
 		}
 		nicklist[nicklist.indexOf(obj.name)]=nick;
 		conntab[nick]=obj;
 		delete conntab[obj.name];
 		obj.name=nick;
-		conn.emit("-setnick",[true,nick]);
+		conn.emit("-setnick",true,nick);
 	});
 	conn.on("getnick",function(){
 		conn.emit("-getnick",obj.name);
@@ -49,17 +49,18 @@ io.on("connection",function(conn){
 	});
 	conn.on("invite",function(nick){
 		if(!conntab.hasOwnProperty(nick)){
-			conn.emit("-invite",[false,"Unknown nick"]);
+			conn.emit("-invite",false,"Unknown nick");
 			return;
 		}
 		conntab[nick].conn.emit("invitation",obj.name);
-		conn.emit("-invite",[true,"Invitation sent"]);
+		conn.emit("-invite",true,"Invitation sent");
 	});
 	conn.on("invite-accept",function(other){
 		if(!conntab.hasOwnProperty(other)){
-			conn.emit("-invite-accept",[false,"Unknown nick"]);
+			conn.emit("-invite-accept",false,"Unknown nick");
 			return;
 		}
+		conn.emit("-invite-accept",true);
 		var text=getTypeText();
 		conntab[other].conn.emit("competition-prepare",{other:obj.name,text:text});
 		conn.emit("competition-prepare",{other:other,text:text});

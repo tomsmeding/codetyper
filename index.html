@@ -21,9 +21,9 @@ socket.on("connect",function(){
 socket.on("-getnick",function(nick){
 	document.getElementById("nick").innerHTML=nickname=nick;
 });
-socket.on("-setnick",function(res){
-	if(!res[0])alert(res[1]);
-	else document.getElementById("nick").innerHTML=nickname=res[1];
+socket.on("-setnick",function(success,str){
+	if(!success)alert(str);
+	else document.getElementById("nick").innerHTML=nickname=str;
 });
 socket.on("-usersearch",function(res){
 	var list=document.getElementById("searchlist");
