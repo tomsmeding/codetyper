@@ -1,7 +1,19 @@
 var utils = require('./utils.js');
 
+
 module.exports = function (http) {
+
+
 var io = require('socket.io')(http)
+
+function updateclientlists(action,name){
+	var i;
+	for(i=0;i<nicklist.length;i++){
+		if(nicklist[i]!=name){
+			conntab[nicklist[i]].conn.emit("nicklist",nicklist);
+		}
+	}
+}
 
 io.on("connection",function(conn){
 	var obj = {
@@ -15,6 +27,8 @@ io.on("connection",function(conn){
 	console.log("new connection, id = "+obj.id);
 	conntab[obj.name]=obj;
 	nicklist.push(obj.name);
+	updateclientlists("join",obj.name);
+
 	conn.on("disconnect",function(){
 		console.log("disconnected, id = "+obj.id);
 		if(obj.compwith){
@@ -25,6 +39,7 @@ io.on("connection",function(conn){
 			conntab[cw].compwith=null;
 		}
 		nicklist.splice(nicklist.indexOf(obj.name),1);
+		updateclientlists("leave",obj.name);
 		delete conntab[obj.name];
 	});
 	conn.on("setnick",function(nick){
@@ -99,6 +114,7 @@ io.on("connection",function(conn){
 		obj.compwith=null;
 	});
 });
+
 
 return io;
 };
