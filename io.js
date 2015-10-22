@@ -28,6 +28,7 @@ io.on("connection",function(conn){
 	conntab[obj.name]=obj;
 	nicklist.push(obj.name);
 	updateclientlists("join",obj.name);
+	updateclientlists("","");
 
 	conn.on("disconnect",function(){
 		console.log("disconnected, id = "+obj.id);
