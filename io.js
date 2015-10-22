@@ -11,9 +11,7 @@ var io = require('socket.io')(http);
 function updateclientlists(action,name){
 	var i;
 	for(i=0;i<nicklist.length;i++){
-		if(nicklist[i]!=name){
-			conntab[nicklist[i]].conn.emit("nicklist",nicklist);
-		}
+		conntab[nicklist[i]].conn.emit("nicklist",nicklist);
 	}
 }
 
@@ -30,7 +28,6 @@ io.on("connection",function(conn){
 	conntab[obj.name]=obj;
 	nicklist.push(obj.name);
 	updateclientlists("join",obj.name);
-	updateclientlists("","");
 
 	conn.on("disconnect",function(){
 		console.log("disconnected, id = "+obj.id);
@@ -42,8 +39,8 @@ io.on("connection",function(conn){
 			conntab[cw].compwith=null;
 		}
 		nicklist.splice(nicklist.indexOf(obj.name),1);
-		updateclientlists("leave",obj.name);
 		delete conntab[obj.name];
+		updateclientlists("leave",obj.name);
 	});
 	conn.on("setnick",function(nick){
 		if(!utils.validatenick(nick)){
@@ -58,6 +55,7 @@ io.on("connection",function(conn){
 		delete conntab[obj.name];
 		obj.name=nick;
 		conn.emit("-setnick",true,nick);
+		updateclientlists("nick",obj.name);
 	});
 	conn.on("getnick",function(){
 		conn.emit("-getnick",obj.name);
