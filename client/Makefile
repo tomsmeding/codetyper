@@ -21,4 +21,5 @@ main.css: $(STYLFILES)
 	rm -r css/
 
 bundle.js: $(JSFILES)
-	$(BROWSERIFY) -t babelify js/index.js -o bundle.js
+	$(BROWSERIFY) -t babelify js/index.js -o bundle.js_
+	mv bundle.js_ bundle.js
